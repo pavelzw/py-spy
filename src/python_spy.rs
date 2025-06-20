@@ -219,7 +219,11 @@ impl PythonSpy {
         // This has the potential for race conditions (in that the thread activity could change
         // between getting the status and locking the thread, but seems unavoidable right now
         let _lock = if self.config.blocking == LockingStrategy::Lock {
-            Some(self.process.lock().context("Failed to suspend process")?)
+            let lock = self.process.lock();
+            if let Err(e) = &lock {
+                println!("Failed to lock process: {:?}", e);
+            }
+            Some(lock.context("Failed to suspend process")?)
         } else {
             None
         };

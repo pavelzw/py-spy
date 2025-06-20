@@ -196,9 +196,21 @@ impl PythonSpy {
             // Don't need to collect thread activity if we're only getting the
             // GIL thread: If we're holding the GIL we're by definition active.
         } else {
-            for thread in self.process.threads()?.iter() {
-                let threadid: Tid = thread.id()?;
-                thread_activity.insert(threadid, thread.active()?);
+            let threads = self.process.threads();
+            if let Err(e) = &threads {
+                println!("failed to get threads: {:?}", e);
+            }
+            for thread in threads?.iter() {
+                let thread_id = thread.id();
+                if let Err(e) = &thread_id {
+                    println!("failed to get thread id: {:?}", e);
+                }
+                let threadid: Tid = thread_id?;
+                let thread_active = thread.active();
+                if let Err(e) = &thread_active {
+                    println!("failed to get thread activity: {:?}", e);
+                }
+                thread_activity.insert(threadid, thread_active?);
             }
         }
 

@@ -6,7 +6,7 @@ use std::iter::FromIterator;
 use std::path::Path;
 
 use anyhow::{Context, Error, Result};
-use remoteprocess::{Pid, Process, ProcessMemory, Tid};
+use remoteprocess::{Error::IOError, Pid, Process, ProcessMemory, Tid};
 
 use crate::config::{Config, LockingStrategy};
 #[cfg(feature = "unwind")]
@@ -207,10 +207,18 @@ impl PythonSpy {
                 }
                 let threadid: Tid = thread_id?;
                 let thread_active = thread.active();
-                if let Err(e) = &thread_active {
-                    println!("failed to get thread activity: {:?}", e);
+                match thread_active {
+                    Ok(active) => {
+                        thread_activity.insert(threadid, thread_active);
+                    }
+                    Err(IOError(e)) => {
+                        // this can happen if there is a race condition between
+                        // querying the thread activity and the thread exiting
+                        debug!("failed to get thread activity: {:?}", e);
+                        continue;
+                    }
+                    Err(e) => Err(e)?,
                 }
-                thread_activity.insert(threadid, thread_active?);
             }
         }
 

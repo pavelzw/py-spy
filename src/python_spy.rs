@@ -209,7 +209,7 @@ impl PythonSpy {
                 let thread_active = thread.active();
                 match thread_active {
                     Ok(active) => {
-                        thread_activity.insert(threadid, thread_active);
+                        thread_activity.insert(threadid, active);
                     }
                     Err(IOError(e)) => {
                         // this can happen if there is a race condition between
